@@ -282,6 +282,22 @@ func schemaNodeConfig() *schema.Schema {
 						},
 					},
 				},
+
+				"ephemeral_storage_config": {
+					Type:     schema.TypeList,
+					Optional: true,
+					ForceNew: true,
+					MaxItems: 1,
+					Elem: &schema.Resource{
+						Schema: map[string]*schema.Schema{
+							"local_ssd_count": {
+								Type:         schema.TypeInt,
+								Required:     true,
+								ValidateFunc: validation.IntAtLeast(1),
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -429,6 +445,10 @@ func expandNodeConfig(v interface{}) *containerBeta.NodeConfig {
 		nc.LinuxNodeConfig = expandLinuxNodeConfig(v)
 	}
 
+	if v, ok := nodeConfig["ephemeral_storage_config"]; ok {
+		nc.EphemeralStorageConfig = expandEphemeralStorageConfig(v)
+	}
+
 	return nc
 }
 
@@ -492,6 +512,24 @@ func expandLinuxNodeConfig(v interface{}) *containerBeta.LinuxNodeConfig {
 	}
 }
 
+func expandEphemeralStorageConfig(v interface{}) *containerBeta.EphemeralStorageConfig {
+	if v == nil {
+		return nil
+	}
+	ls := v.([]interface{})
+	if len(ls) == 0 {
+		return nil
+	}
+
+	cfg := ls[0].(map[string]interface{})
+	ephConfig := &containerBeta.EphemeralStorageConfig{}
+	if localSsdCount, ok := cfg["local_ssd_count"]; ok {
+		ephConfig.LocalSsdCount = localSsdCount.(int64)
+	}
+
+	return ephConfig
+}
+
 func flattenNodeConfig(c *containerBeta.NodeConfig) []map[string]interface{} {
 	config := make([]map[string]interface{}, 0, 1)
 
@@ -519,6 +557,7 @@ func flattenNodeConfig(c *containerBeta.NodeConfig) []map[string]interface{} {
 		"boot_disk_kms_key":        c.BootDiskKmsKey,
 		"kubelet_config":           flattenKubeletConfig(c.KubeletConfig),
 		"linux_node_config":        flattenLinuxNodeConfig(c.LinuxNodeConfig),
+		"ephemeral_storage_config": flattenEphemeralStorageConfig(c.EphemeralStorageConfig),
 	})
 
 	if len(c.OauthScopes) > 0 {
@@ -713,6 +752,16 @@ func flattenLinuxNodeConfig(c *containerBeta.LinuxNodeConfig) []map[string]inter
 	if c != nil {
 		result = append(result, map[string]interface{}{
 			"sysctls": c.Sysctls,
+		})
+	}
+	return result
+}
+
+func flattenEphemeralStorageConfig(c *containerBeta.EphemeralStorageConfig) []map[string]interface{} {
+	result := []map[string]interface{}{}
+	if c != nil {
+		result = append(result, map[string]interface{}{
+			"local_ssd_count": c.LocalSsdCount,
 		})
 	}
 	return result
