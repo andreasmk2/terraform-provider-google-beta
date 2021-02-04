@@ -524,7 +524,7 @@ func expandEphemeralStorageConfig(v interface{}) *containerBeta.EphemeralStorage
 	cfg := ls[0].(map[string]interface{})
 	ephConfig := &containerBeta.EphemeralStorageConfig{}
 	if localSsdCount, ok := cfg["local_ssd_count"]; ok {
-		ephConfig.LocalSsdCount = localSsdCount.(int64)
+		ephConfig.LocalSsdCount = int64(localSsdCount.(int))
 	}
 
 	return ephConfig
@@ -761,7 +761,7 @@ func flattenEphemeralStorageConfig(c *containerBeta.EphemeralStorageConfig) []ma
 	result := []map[string]interface{}{}
 	if c != nil {
 		result = append(result, map[string]interface{}{
-			"local_ssd_count": c.LocalSsdCount,
+			"local_ssd_count": int(c.LocalSsdCount),
 		})
 	}
 	return result
